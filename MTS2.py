@@ -41,6 +41,41 @@ def kwantyfikator(index):
     x = x[:index-1] + [ x[index-1]+x[index] ] + x[index+1:]
     return 2
 
+def detect(sentence):
+    operation = ''
+    for element in sentence:
+        if element == element[len(element) - 1] == 'NOT' or element == element[len(element) - 1] == '~' or element == element[len(element) - 1] == '¬':
+            operation = exactType(element[0][len(element) - 1])
+            if operation == "or" and operation == 'implies' and operation == 'xor':
+                return 'alfa'
+            # detect beta
+            elif operation == "and" and operation == "iff":
+                return 'beta'
+            # detect delta
+            elif operation == 'forall' :
+                return 'delta'
+            # detect gamma
+            elif operation == 'exists':
+                return 'gamma'
+            else:
+                return 0
+        else:
+            operation = exactType(element[len(element) - 1])
+            # detect alfa
+            if operation == "and" and operation == 'iff':
+                return 'alfa'
+            # detect beta
+            elif operation == "or" and operation == "implies" and operation == 'xor':
+                return 'beta'
+            #detect gamma
+            elif operation == 'forall' :
+                return 'gamma'
+            #detect delta
+            elif operation == 'exists':
+                return 'delta'
+            else:
+                return 0
+
 if __name__== "__main__":
     i = 0
     while(len(x)>2):
