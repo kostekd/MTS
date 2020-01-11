@@ -28,8 +28,12 @@ def funkcja_predykat(index):
     global x
     newindeks = int(x[index][2:])
     znakfunkcji = x[index][0]
-    newstr=",".join(x[index-newindeks:index])
-    x = x[:index-newindeks]+[znakfunkcji+"("+ newstr +")"]+x[index+1:]
+    newstr="".join(x[index-newindeks:index])
+    stala=[]
+    for i in range(newindeks):
+        stala.append(newstr[i])
+    x=x[:index-newindeks]+[stala + [znakfunkcji]]+x[index+1:]
+    #x = x[:index-newindeks]+[znakfunkcji+"("+ newstr +")"]+x[index+1:]
     return newindeks
 
 def kwantyfikator(index):
