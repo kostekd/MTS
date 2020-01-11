@@ -1,3 +1,4 @@
+#arka gdynia kokaina
 x=input().split()
 
 def type(a):
