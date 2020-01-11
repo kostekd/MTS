@@ -1,6 +1,37 @@
 #chwdp
 x=input().split()
 
+def exactType(a):
+	const="abcde"
+	var="ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	typedict= {
+		"NOT": "not",
+		"~": "not",
+		"¬": "not",
+		"AND": "and",
+		"&": "and",
+		"∧": "and",
+		"OR": "or",
+		"|": "or",
+		"∨": "or",
+		"IMPLIES": "implies",
+		"→": "implies",
+		"IFF": "iff",
+		"↔": "iff",
+		"XOR": "xor",
+		"⊕": "xor",
+		"FORALL": "forall",
+		"∀": "forall",
+		"EXISTS": "exists",
+		"∃": "exists"
+	}
+	if a in const:
+		return "CONST"
+	elif a in var:
+		return "VAR"
+	else:
+		return typedict.get(a)
+
 def type(a):
     if ("/" in a):
         return 0                                                                                    #predykat lub funkcja
