@@ -1,4 +1,5 @@
-# chwdp
+import copy
+GLOBAL_CONST = "abcdefghijk"
 def exactType(a):
     const = "abcde"
     var = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -98,56 +99,69 @@ def funkcja_predykat(index):
 
 def detect(sentence):
     operation = ''
+    rules_available = []
     for element in sentence:
         if element[len(element) - 1] == 'NOT' or element[len(element) - 1] == '~' or element[len(element) - 1] == '¬':
             operation = exactType(element[0][len(element[0]) - 1])
             if operation == "or" or operation == 'implies' or operation == 'xor':
-                return 'alfa'
+                rules_available.append('alfa')
             # detect beta
             elif operation == "and" or operation == "iff":
-                return 'beta'
+                rules_available.append('beta')
             # detect delta
             elif operation == 'forall':
-                return 'delta'
+                rules_available.append('delta')
             # detect gamma
             elif operation == 'exists':
-                return 'gamma'
-            else:
-                return 'Nothing'
+                rules_available.append('gamma')
+
         else:
             operation = exactType(element[len(element) - 1])
             # detect alfa
             if operation == "and" or operation == 'iff':
-                return 'alfa'
+                rules_available.append('alfa')
             # detect beta
             elif operation == "or" or operation == "implies" or operation == 'xor':
-                return 'beta'
+                rules_available.append('beta')
             # detect gamma
             elif operation == 'forall':
-                return 'gamma'
+                rules_available.append('gamma')
             # detect delta
             elif operation == 'exists':
-                return 'delta'
-            else:
-                return 'Nothing'
+                rules_available.append('delta')
+    return rules_available
 
 def extractVariable(sentence):
     return sentence[0][0]
-def getConst(con):
-    #NOT IMPLEMENTED, FOR NOW RETURNING ELEMENT 0
-    return con[0]
+#for delta rule
+def getLastConst(con):
+    return con[len(con) - 1]
+
+def addConst(const_list):
+    last_const = const_list[len(const_list) - 1]
+    const_index = GLOBAL_CONST.index(last_const)
+    const_list.append(GLOBAL_CONST[const_index + 1])
+
+def getConst(itr, const):
+    if itr >= len(const):
+        return 0
+    else:
+        return const[itr]
+
 #RULES
 def alfa(expression):
     operator = exactType(expression[len(expression) - 1])
     if operator == 'and':
-        return [expression[0]] + [expression[1]]
+        #print('here')
+        return expression[0], expression[1]
     elif operator == 'or':
+        #print('here')
         #due to presence of negation
-        return [[expression[0]] + ['NOT']] + [[expression[1]] + ['NOT']]
+        return [expression[0]] + ['NOT'] , [expression[1]] + ['NOT']
     elif operator == 'implies':
-        return [expression[0]] + [[expression[1]] + ['NOT']]
+        return expression[0] , [expression[1]] + ['NOT']
     elif operator == 'iff' or operator == 'xor':
-        return [[expression[0]] + [expression[1]] + ['IMPLIES']] + [[expression[1]] + [expression[0]] + ['IMPLIES']]
+        return [expression[0]] + [expression[1]] + ['IMPLIES'] , [expression[1]] + [expression[0]] + ['IMPLIES']
 
 def beta(expression):
     operator = exactType(expression[len(expression) - 1])
@@ -170,22 +184,70 @@ def gamma(a, const, var):
 
     return a[0]
 
+def delta(expression, constant, variable):
+    for i in range(0,len(expression)):
+        if type(expression[i]) == list:
+            gamma(expression[i], constant, variable)
+        else:
+            if expression[i] == variable:
+                expression[i] = constant
+    return expression[0]
+
+
 #================================================
 def apply(exp, rule, con = None, var = None):
+    #to prevent working on the original list
+    exp_copy = exp
     if rule == 'alfa':
-        return alfa(exp)
+        return alfa(exp_copy)
     elif rule == 'beta':
-        return beta(exp)
+        return beta(exp_copy)
     elif rule == 'gamma':
-        return gamma(exp, con, var)
+        return gamma(exp_copy, con, var)
+    elif rule == 'delta':
+        return delta(exp_copy, con, var)
     else:
         return 0
+
+def check(rules):
+    if len(rules) == 0:
+        return False
+    else:
+        return True
+
+def whatRule(rules):
+    if check(rules) == False:
+        return '', 0
+    for i in range(len(rules)):
+        if rules[i] != 'gamma':
+            return rules[i],i
+    return 'gamma', 0
+
+
+def checkAnswer(leafs):
+    for i in range(len(leafs)):
+        neg = []
+        if leafs[i][len(leafs[i]) - 1] == 'NOT':
+            neg = leafs[i][0]
+            for j in range(0, len(leafs)):
+                if neg == leafs[j]:
+                    return False
+    return True
+
+
 if __name__ == "__main__":
+    #DEFINITIONS
     constants = ['a']
     my_const, my_var = None, None
     i = 0
     leafs = []
+    leafs_answer = []
+    available_operation = []
+    finish = True
+    answer = True
+    gamma_count = 0
     x = input().split()
+    #===========================
 
     while(not done()):
         if (typ(x[i]) == 0):
@@ -197,33 +259,80 @@ if __name__ == "__main__":
         elif (typ(x[i]) == 4):
             i -= operator(i)
         i += 1
-    print(x)
+
     # testing leaf
     leafs.append([x])
-    current = 0
-    for i in range (len(leafs)):
-        z = detect(leafs[i])
+    leafs_answer.append(True)
+    available_operation.append(True)
+    print(x)
+    while finish:
+        operation_cnt = []
+        current = 0
+        for i in range (len(leafs)):
+            z = detect(leafs[i])
+            if check(z) == False:
+                available_operation[i] = False
+            rule, current = whatRule(z)
+            operation_cnt.append(rule)
+            #extracting variable that will be changed with constant (GAMMA)
+            if rule == 'gamma' and gamma_count <= len(constants):
+                my_var = extractVariable(leafs[i][current][0])
+                my_const = getConst(gamma_count, constants)
+                gamma_count += 1
+            elif rule == 'delta':
+                addConst(constants)
+                my_var = extractVariable(leafs[i][current][0])
+                my_const = getLastConst(constants)
 
-        #extracting variable that will be changed with constant (GAMMA)
-        if z == 'gamma':
-            my_var = extractVariable(leafs[i][0])
-            my_const = getConst(constants)
-            
+        #APPLYING THE RULES
+            if exactType(leafs[i][current][len(leafs[i][current]) - 1]) == 'not':
+                if rule == 'beta':
+                    result = apply(leafs[i][current][0], rule, my_const, my_var)
+                    print(result)
+                    leafs[i] = result[0]
+                    leafs.append([result[1]])
+                    leafs_answer.append(True)
+                    available_operation.append(True)
+                elif rule == 'gamma'and gamma_count <= len(constants):
+                    buf = copy.deepcopy(leafs[i][current])
+                    result = apply(leafs[i][current], rule, my_const, my_var)
+                    leafs[i] = [buf]
+                    leafs[i].append([result[0][1]] + ['NOT'])
+                elif rule == 'delta':
+                    result = apply(leafs[i][current], rule, my_const, my_var)
+                    leafs[i][current] = [result[0][1]] + ['NOT']
+                elif rule == 'alfa':
+                    result1,result2 = apply(leafs[i][current][0], rule, my_const, my_var)
+                    leafs[i][current] = result1
+                    leafs[i].append(result2)
 
-        if exactType(leafs[i][current][len(leafs[i][current]) - 1]) == 'not':
-            result = apply(leafs[i][current][0], z, my_const, my_var)
-            if z == 'beta':
-                leafs[i] = result[0]
-                leafs.append([result[1]])
+
             else:
-                leafs[i] = result
+                if rule == 'beta':
+                    result = apply(leafs[i][current], rule, my_const, my_var)
+                    leafs[i] = result[0]
+                    leafs.append([result[1]])
+                    leafs_answer.append(True)
+                    available_operation.append(True)
+                elif rule == 'gamma'and gamma_count <= len(constants):
+                    #copying the list
+                    buf = copy.deepcopy(leafs[i][current])
+                    result = apply(leafs[i][current], rule, my_const, my_var)
+                    leafs[i] = [buf]
+                    leafs[i].append(result[1])
+                elif rule == 'delta':
+                    result = apply(leafs[i][current], rule, my_const, my_var)
+                    leafs[i][current] = result[1]
+                elif rule == 'alfa':
+                    result1,result2 = apply(leafs[i][current], rule, my_const, my_var)
+                    leafs[i][current] = result1
+                    leafs[i].append(result2)
+            print(leafs)
+            leafs_answer[i] = checkAnswer(leafs[i])
 
-        else:
-            result = apply(leafs[i][current], z, my_const, my_var)
-            print(result)
-            if z == 'beta':
-                leafs[i] = result[0]
-                leafs.append([result[1]])
-            else:
-                leafs[i] = result
-print(leafs)
+        if available_operation.count(False) == len(available_operation) or  gamma_count > len(constants):
+            finish = False
+    if leafs_answer.count(False) != len(leafs_answer):
+        print("SPEŁNIALNA")
+    else:
+        print("NIESPEŁNIALNA")
